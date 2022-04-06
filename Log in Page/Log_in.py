@@ -1,3 +1,4 @@
+
 from tkinter import *
 import firebase_admin
 # from firebase_admin import db
@@ -9,6 +10,7 @@ import json
 from dotenv import load_dotenv
 import requests
 import pprint
+from PIL import Image, ImageTk
 load_dotenv('Log_In.env')
 FIREBASE_API_KEY = os.environ['FIREBASE_API_KEY']
 credential = credentials.Certificate("workplanKey.json")
@@ -19,18 +21,22 @@ doc_ref = db.collection(u'users')
 def first_page():
     global home_screen
     home_screen = Tk()
-    home_screen.geometry("300x250")
+    home_screen.geometry("640x400")
     home_screen.title("Log in Page")
-    Label(text = "Select Log in, or register if no account exists", bg = "grey", width="300", height="2", font=("Ariel", 15)).pack()
+    background_image = Image.open("paul-earle-wVjd0eWNqI8-unsplash.jpg")
+    background_image = ImageTk.PhotoImage(background_image)
+    canvas = Label(home_screen, image=background_image)
+    canvas.place(x=0, y=0, relwidth=1, relheight=1)
+    Label(text = "Select Log in, or register if no account exists", bg = "gainsboro", width="300", height="2", font=("Ariel", 15)).pack()
     Button(text="Login", height="2", width="30", command=LogIn).pack() 
-    Label(text="").pack() 
-    Button(text="Register", height="2", width="30", command=registerAccount).pack()
+    Button(text="Register", height="2", width="30", command=registerAccount).pack(pady=40)
     home_screen.mainloop()
 
 def registerAccount():
+    global registration
     registration = Toplevel(home_screen)
     registration.title("Account Creation")
-    registration.geometry("300x250")
+    registration.geometry("300x400")
 
     global email 
     email = StringVar()
@@ -42,7 +48,7 @@ def registerAccount():
     lname = StringVar()
     global button1
     button1 = BooleanVar()
-    Label(registration, text="Enter work email and password.", bg="grey").pack()
+    Label(registration, text="Enter work email and password.", bg="gainsboro").pack()
     Label(registration, text="").pack()
     Label(registration, text="First Name: ").pack()
     Entry(registration, textvariable=fname).pack()
@@ -55,7 +61,7 @@ def registerAccount():
     Label(registration, text="").pack()
     Radiobutton(registration, text="Employee", value="false", variable=button1).pack()
     Radiobutton(registration, text="Manager", value="True", variable=button1).pack()
-    Button(registration, text="Create Account", width="15", height="1", bg="grey", command=sendRegisterToFirebase).pack()
+    Button(registration, text="Create Account", width="15", height="1", bg="gainsboro", command=sendRegisterToFirebase).pack()
 
 def sendRegisterToFirebase():
     # ref.child('Users')
@@ -76,12 +82,14 @@ def sendRegisterToFirebase():
         u'manager': button1_reg,
         u'isLoggedIn': False
     })
+    Label(registration, text="Account has been registered.", fg="green", font=("Ariel", 11)).pack(side="bottom")
+    
 
 def LogIn():
     global Log_in
     Log_in = Toplevel(home_screen)
     Log_in.title("Log In Page")
-    Log_in.geometry("300x250")
+    Log_in.geometry("300x400")
 
     global email_log 
     email_log = StringVar()
@@ -90,7 +98,7 @@ def LogIn():
     global email_line
     global pass_line
 
-    Label(Log_in, text="Enter work email and password.", bg="grey").pack()
+    Label(Log_in, text="Enter work email and password.", bg="gainsboro").pack()
     Label(Log_in, text="").pack()
     Label(Log_in, text="Email: ").pack()
     email_line = Entry(Log_in, textvariable=email_log).pack()
@@ -102,7 +110,7 @@ def LogIn():
 def logCheck():
     rest_api_url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword"
     user = auth.get_user_by_email(email_log.get())
-    ref_log = db.collection(u'Users').document(user.uid)
+    ref_log = db.collection(u'users').document(user.uid)
     return_secure_token: bool=True
     payload = json.dumps({
         "email": email_log.get(),
@@ -116,7 +124,10 @@ def logCheck():
     
     if ('error' in token and token['error']['message'] == "INVALID_PASSWORD"):
             passwordNotLogged()
+    elif(email_log.get() != user.email):
+        emailNotLogged()
     else:
+        ref_log.update({u'isLoggedIn':True})
         logWorked()
     '''ref_email = db.reference("/Users/" + user + "/UserData/Email")
     ref_pass = db.reference("/Users/" + user + "/UserData/Password")
@@ -136,7 +147,7 @@ def logWorked():
     accepted.title("You have logged in")
     accepted.geometry("150x100")
     Label(accepted, text="Login Success").pack()
-    Button(accepted,text="Accept")
+    Button(accepted,text="Accept", command=break_log).pack()
 
 def break_log():
     accepted.destroy()
@@ -148,8 +159,9 @@ def emailNotLogged():
     declined = Toplevel(Log_in)
     declined.title("Wrong Email")
     declined.geometry("150x100")
+
     Label(declined, text="Login Failed Due To Email").pack()
-    Button(declined,text="Try Again")
+    Button(declined,text="Try Again", command=LogIn)
 
 def passwordNotLogged():
     print("Password Not Found.")
@@ -158,7 +170,7 @@ def passwordNotLogged():
     declined.title("Wrong Password")
     declined.geometry("150x100")
     Label(declined, text="Login Failed Due To Password").pack()
-    Button(declined,text="Try Again")
+    Button(declined,text="Try Again", command=LogIn)
     
 
 if __name__ == "__main__":
