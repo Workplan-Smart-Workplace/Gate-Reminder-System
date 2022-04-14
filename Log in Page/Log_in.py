@@ -11,6 +11,9 @@ from dotenv import load_dotenv
 import requests
 import pprint
 from PIL import Image, ImageTk
+from io import BytesIO
+
+
 load_dotenv('Log_In.env')
 FIREBASE_API_KEY = os.environ['FIREBASE_API_KEY']
 credential = credentials.Certificate("workplanKey.json")
@@ -30,6 +33,8 @@ def first_page():
     Label(text = "Select Log in, or register if no account exists", bg = "gainsboro", width="300", height="2", font=("Ariel", 15)).pack()
     Button(text="Login", height="2", width="30", command=LogIn).pack() 
     Button(text="Register", height="2", width="30", command=registerAccount).pack(pady=40)
+    Button(text="Weather", height="2", width="30", command=Weather).pack(pady=20)
+    Button(text="Sign Out", height="2", width="30", command=signOut).pack(pady=20)
     home_screen.mainloop()
 
 def registerAccount():
@@ -77,10 +82,11 @@ def sendRegisterToFirebase():
    # ref_to_register.push().set({"UserData":{"Email":email_reg, "Password":pass_reg}})
     ref_to_register.set({
         u'email':email_reg,
-        u'First Name': fname_reg,
-        u'Last Name': lname_reg,
+        u'fName': fname_reg,
+        u'lName': lname_reg,
         u'manager': button1_reg,
-        u'isLoggedIn': False
+        u'isLoggedIn': False,
+        u'userID': uID.uid
     })
     Label(registration, text="Account has been registered.", fg="green", font=("Ariel", 11)).pack(side="bottom")
     
@@ -151,7 +157,7 @@ def logWorked():
 
 def break_log():
     accepted.destroy()
-
+    Log_in.destroy()
 
 def emailNotLogged():
     print("Email Not Found.")
@@ -172,7 +178,24 @@ def passwordNotLogged():
     Label(declined, text="Login Failed Due To Password").pack()
     Button(declined,text="Try Again", command=LogIn)
     
+def signOut():
+    global email_sign
+    global entered_email
+    entered_email = StringVar()
+    email_sign = Toplevel(home_screen)
+    email_sign.title("Sign Out Page")
+    email_sign.geometry("300x200")
+    Label(email_sign, text="Email: ").pack()
+    email_line = Entry(email_sign, textvariable=entered_email).pack()
+    Button(email_sign,text="Confirm", command=signOutConfirm).pack(pady=20)
 
+def signOutConfirm():
+    user = auth.get_user_by_email(entered_email.get())
+    ref_log = db.collection(u'users').document(user.uid)
+    ref_log.update({u'isLoggedIn':False})
+    Label(email_sign, text="Account has been signed out.", fg="green", font=("Ariel", 11)).pack(side="bottom")
+def Weather():
+    os.system('python weather_app.py')
 if __name__ == "__main__":
     first_page()
     
