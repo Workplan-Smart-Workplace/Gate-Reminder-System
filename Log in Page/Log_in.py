@@ -115,7 +115,11 @@ def LogIn():
 
 def logCheck():
     rest_api_url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword"
-    user = auth.get_user_by_email(email_log.get())
+    try:
+        user = auth.get_user_by_email(email_log.get())
+    except:
+        emailNotLogged()
+
     ref_log = db.collection(u'users').document(user.uid)
     return_secure_token: bool=True
     payload = json.dumps({
